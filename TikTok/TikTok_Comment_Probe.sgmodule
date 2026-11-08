@@ -1,0 +1,4 @@
+#!name=TikTok 评论接口检测 V1
+#!desc=仅为部分 TikTok API 域名开启 HTTPS 解密范围；不修改数据，不发送数据。请在 Clash 请求记录中检查 comment/list 等路径。
+[MITM]
+hostname = %APPEND% api16-normal-c-useast1a.tiktokv.com, api22-normal-c-useast1a.tiktokv.com, api19-normal-c-useast1a.tiktokv.com
