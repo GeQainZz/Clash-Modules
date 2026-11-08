@@ -1,0 +1,6 @@
+#!name=TikTok 评论接口检测 V2
+#!desc=针对实际观测到的 API 域名进行只读响应脚本探测；不翻译、不修改评论。请查看脚本日志。
+[Script]
+TikTok Comment Probe V2 = type=http-response, pattern=^https?:\/\/(?:api-h2|api31-normal-alisg)\.tiktokv\.com\/.*comment.*, requires-body=false, script-path=https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Scripts/TikTok/comment_probe_v2.js
+[MITM]
+hostname = %APPEND% api-h2.tiktokv.com, api31-normal-alisg.tiktokv.com
