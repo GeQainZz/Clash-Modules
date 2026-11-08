@@ -1,0 +1,6 @@
+#!name=TikTok 脚本执行检测 V3
+#!desc=仅检测请求阶段 JavaScript 是否执行，不读取请求体或评论，不修改内容。
+[Script]
+TikTok Script Probe V3 = type=http-request, pattern=^https?:\/\/api31-normal-alisg\.tiktokv\.com\/.*, requires-body=false, script-path=https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Scripts/TikTok/script_probe_v3.js
+[MITM]
+hostname = %APPEND% api31-normal-alisg.tiktokv.com
