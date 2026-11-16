@@ -1,0 +1,40 @@
+#!name=YouTube 集中增强 · Veyrn
+#!desc=YouTube 最高画质、去广告、可莉同源字幕选择逻辑；YouTube Music 独立歌词翻译。停用旧的三个 YouTube 插件。测试版，需真机验证。
+#!author=Maasea, gholts, RuCu6, VirgilClyne, Kelee; integration for Veyrn
+#!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/YouTube.png
+#!system=iOS, iPadOS
+#!loon_version=3.5.1(998)
+#!date=2026-11-16 1.0.1
+#!tag=去广告,功能增强
+
+[Argument]
+autoHd=switch, true, tag=自动最高画质, desc=使用当前视频与设备可用的最高画质
+captionLang=select, "zh-Hans", "zh-Hant", "en", "ja", "ko", "off", tag=YouTube 字幕语言, desc=YouTube 字幕目标语言；需要视频本身有字幕或自动字幕
+musicTranslate=switch, true, tag=Music 歌词翻译, desc=仅翻译 YouTube Music 的歌词请求
+musicLang=select, "ZH-HANS", "ZH-HANT", "EN", "JA", "KO", tag=Music 歌词语言, desc=歌词通过 Google 翻译
+musicShowOnly=switch, false, tag=Music 只显示译文, desc=关闭时保留原文与译文
+musicPosition=select, "Forward", "Reverse", tag=Music 原文位置, desc=Forward 原文在前；Reverse 译文在前
+blockUpload=switch, false, tag=隐藏上传按钮
+blockShorts=switch, false, tag=隐藏 Shorts 按钮
+debug=switch, false, tag=调试日志, desc=排错时临时开启
+
+[Rule]
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,QUIC)),REJECT
+AND,((DOMAIN,music.youtube.com),(PROTOCOL,QUIC)),REJECT
+
+[Rewrite]
+request if ${url} ~= /^https:\/\/s\.youtube\.com\/api\/stats\/ads(?:\?|$)/i then reject(404)
+request if ${url} ~= /^https:\/\/www\.youtube\.com\/(?:pagead|pcs)\//i then reject(404)
+
+[Script]
+# All routes use one dispatcher. No two request rules or response rules overlap.
+request if ${url} ~= /^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:player\/ad_break|log_event|browse)(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${autoHd}, ${captionLang}, ${musicTranslate}, ${musicLang}, ${musicShowOnly}, ${musicPosition}, ${blockUpload}, ${blockShorts}, ${debug}}) with tag="YouTube 统一请求", requires_body=true, binary_body_mode=true, timeout=20
+request if ${url} ~= /^https?:\/\/[\w-]+\.googlevideo\.com\/(?:initplayback|videoplayback)(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${autoHd}, ${captionLang}, ${debug}}) with tag="YouTube 播放请求", requires_body=true, binary_body_mode=true, timeout=20
+request if ${url} ~= /^https:\/\/music\.youtube\.com\/youtubei\/v1\/browse(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${musicTranslate}, ${musicLang}, ${musicShowOnly}, ${musicPosition}, ${debug}}) with tag="Music 歌词请求", requires_body=true, timeout=20
+response if ${url} ~= /^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(?:navigation\/resolve_url|browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch|config|log_event)(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${autoHd}, ${captionLang}, ${musicTranslate}, ${musicLang}, ${musicShowOnly}, ${musicPosition}, ${blockUpload}, ${blockShorts}, ${debug}}) with tag="YouTube 统一响应", requires_body=true, binary_body_mode=true, timeout=25
+response if ${url} ~= /^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${autoHd}, ${captionLang}, ${blockUpload}, ${blockShorts}, ${debug}}) with tag="YouTube 播放响应", requires_body=true, binary_body_mode=true, timeout=20
+response if ${url} ~= /^https:\/\/music\.youtube\.com\/youtubei\/v1\/browse(?:\?.*)?$/i then script("https://raw.githubusercontent.com/GeQainZz/Clash-Modules/main/Loon/YouTube-Unified/YouTube-Unified.js", {${musicTranslate}, ${musicLang}, ${musicShowOnly}, ${musicPosition}, ${debug}}) with tag="Music 歌词响应", requires_body=true, timeout=25
+
+[MITM]
+hostname=*.googlevideo.com, youtubei.googleapis.com, music.youtube.com, s.youtube.com, www.youtube.com
