@@ -1,0 +1,19 @@
+#!name=po0 防火墙自动加白 · Clash
+#!desc=将本机当前公网 IPv4 网段加入 po0 白名单。支持多 token、固定槽位、切网事件、每 10 分钟巡检与手动刷新。自动触发需要 Clash 打开并已连接。
+#!author=reallinzc, w0ven; Clash adaptation for Veyrn
+#!homepage=https://github.com/w0ven/po0fw
+#!icon=https://raw.githubusercontent.com/w0ven/po0fw/main/docs/icons/po0fw.png
+#!date=2026-11-21 1.0.0
+#!arguments=tokens:""
+#!arguments-desc=填入 po0 控制台的 pgnfw_ token，多台机器用英文逗号分隔。可选 token@0 固定槽位，同一机器的不同设备应使用不同槽位。保持 Clash 已连接，在面板点刷新完成首次加白。
+
+[Rule]
+IP-CIDR,124.221.69.228/32,DIRECT,no-resolve
+
+[Script]
+po0-fw-cron = type=cron, cronexp="*/10 * * * *", script-path=https://raw.githubusercontent.com/GeQainZz/Clash-Modules/po0-firewall-clash/Clash/po0fw/po0-firewall-whitelist.js, timeout=60, argument="tokens={{{tokens}}}"
+po0-fw-event = type=event, event-name=network-changed, script-path=https://raw.githubusercontent.com/GeQainZz/Clash-Modules/po0-firewall-clash/Clash/po0fw/po0-firewall-whitelist.js, timeout=60, argument="tokens={{{tokens}}}"
+po0-fw-panel = type=generic, script-path=https://raw.githubusercontent.com/GeQainZz/Clash-Modules/po0-firewall-clash/Clash/po0fw/po0-firewall-whitelist.js, timeout=60, argument="tokens={{{tokens}}}"
+
+[Panel]
+po0-fw = script-name=po0-fw-panel, title=po0 防火墙加白, content=填写 token 后点击刷新, update-interval=300
