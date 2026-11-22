@@ -1,8 +1,8 @@
 /*
- * po0fw Clash module adapter, 1.0.0, 2026-11-21.
+ * po0fw Clash module adapter, 1.0.1, 2026-11-22.
  * Based on w0ven/po0fw (reallinzc / w0ven), scripts/po0-firewall-whitelist.js.
  * Upstream commit 0664fde919707512e310d09231a4900607d46f25.
- * Changes: force DIRECT requests, isolate persisted state, redact token values in output.
+ * Changes: force DIRECT requests, isolate persisted state, redact tokens, record run history.
  * Script loaded as a Surge-style module. Clash provides the corresponding API
  * identity and interprets its HTTP timeout in seconds.
  *
@@ -300,6 +300,7 @@ function onCellular() {
 function finish(title, content, allOk) {
   title = redactToken(title);
   content = redactToken(content);
+  recordRun(allOk, title, content);
   if (isQX) {
     $done();
     return;
@@ -462,8 +463,38 @@ function describe(index, ctx) {
   return head + "✅ " + list.length + "/" + limit + "\n    " + ips;
 }
 
+// Keep separate histories so a panel refresh cannot hide a missed cron run.
+var RUN_SOURCE = "panel";
+if (typeof $script !== "undefined" && $script) {
+  if ($script.name === "po0-fw-cron") RUN_SOURCE = "cron";
+  if ($script.name === "po0-fw-event") RUN_SOURCE = "network";
+}
+var RUN_STARTED_AT = Date.now();
+var RUN_ID = String(RUN_STARTED_AT) + "-" + Math.random().toString(36).slice(2);
+
+function recordRun(ok, title, content) {
+  var key = STORE_PREFIX + "runs_" + RUN_SOURCE;
+  var runs;
+  try { runs = JSON.parse(storeRead(key) || "[]"); } catch (e) {}
+  if (!Array.isArray(runs)) runs = [];
+  var record = {
+    id: RUN_ID,
+    source: RUN_SOURCE,
+    startedAt: RUN_STARTED_AT,
+    finishedAt: ok === null ? null : Date.now(),
+    ok: ok,
+    summary: redactToken(title + (ok === false ? " · " + content : "")).slice(0, 500),
+  };
+  runs = runs.filter(function (item) { return item && item.id !== RUN_ID; });
+  runs.unshift(record);
+  storeWrite(JSON.stringify(runs.slice(0, 6)), key);
+  console.log("[po0fw] " + RUN_SOURCE + " " + new Date(record.finishedAt || record.startedAt).toISOString()
+    + " " + (ok === null ? "开始" : ok ? "成功" : "失败") + " " + record.summary.replace(/\\s+/g, " "));
+}
+
 (function main() {
   try {
+    recordRun(null, "正在加白", "");
     var tokens = parseTokenEntries(getArgumentTokens() || storeRead(TOKENS_KEY) || INLINE_TOKENS || "");
 
     if (tokens.length === 0) {
